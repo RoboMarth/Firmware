@@ -336,7 +336,11 @@ class uploader(object):
         self.port.flushInput()
         # Set a baudrate that can not work on a real serial port
         # in that it is 233% off.
-        self.port.baudrate = self.baudrate_bootloader * 2.33
+        try:
+            self.port.baudrate = self.baudrate_bootloader * 2.33
+        except Exception as e:
+            print(str(e) + "-> check for FTDI device failed, assuming USB connection")
+            return
 
         self.__send(uploader.GET_SYNC +
                     uploader.EOC)
