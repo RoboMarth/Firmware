@@ -256,6 +256,7 @@ SF0X::init()
 		_min_distance = 0.01f;
 		_max_distance = 100.0f;
 		_conversion_interval = 25588;
+		break;
 
 	default:
 		PX4_ERR("invalid HW model %d.", hw_model);
