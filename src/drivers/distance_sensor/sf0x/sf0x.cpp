@@ -509,6 +509,7 @@ SF0X::measure()
 	if (ret != sizeof(cmd)) {
 		perf_count(_comms_errors);
 		PX4_DEBUG("write fail %d", ret);
+		PX4_ERR("write fail %d", ret);
 		return ret;
 	}
 
