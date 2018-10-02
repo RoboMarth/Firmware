@@ -430,13 +430,17 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 	struct distance_sensor_s *rbuf = reinterpret_cast<struct distance_sensor_s *>(buffer);
 	int ret = 0;
 
+	PX4_ERR("I am in read function)");
+
 	/* buffer must be large enough */
 	if (count < 1) {
+		PX4_ERR("buffer not large enough");
 		return -ENOSPC;
 	}
 
 	/* if automatic measurement is enabled */
 	if (_measure_ticks > 0) {
+		PX4_ERR("count: %i", count);
 
 		/*
 		 * While there is space in the caller's buffer, and reports, copy them.
@@ -450,6 +454,9 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 			}
 		}
 
+		PX4_ERR("automatic measurement enabled");
+		PX4_ERR("ret: %i", ret);
+
 		/* if there was no data, warn the caller */
 		return ret ? ret : -EAGAIN;
 	}
@@ -460,6 +467,7 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 
 		/* trigger a measurement */
 		if (OK != measure()) {
+			PX4_ERR("error in measure() function");
 			ret = -EIO;
 			break;
 		}
@@ -469,6 +477,7 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 
 		/* run the collection phase */
 		if (OK != collect()) {
+			PX4_ERR("error in collect() function");
 			ret = -EIO;
 			break;
 		}
@@ -479,6 +488,8 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 		}
 
 	} while (0);
+
+	PX4_ERR("I have reached the end of the read function");
 
 	return ret;
 }
