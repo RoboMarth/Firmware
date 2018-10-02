@@ -252,10 +252,10 @@ SF0X::init()
 		_conversion_interval = 50000;
 		break;
 	case 6:
-		/* SF30/c (100m 18317Hz) */	
+		/* SF30/c (100m 20010Hz) */	
 		_min_distance = 0.01f;
 		_max_distance = 100.0f;
-		_conversion_interval = 54;
+		_conversion_interval = 25588;
 
 	default:
 		PX4_ERR("invalid HW model %d.", hw_model);
