@@ -439,7 +439,8 @@ SF0X::read(device::file_t *filp, char *buffer, size_t buflen)
 	}
 
 	/* if automatic measurement is enabled */
-	if (_measure_ticks > 0) {
+	if (0) {
+/* if (_measure_ticks > 0) { */
 		PX4_ERR("count: %i", count);
 
 		/*
