@@ -372,12 +372,12 @@ function(px4_add_common_flags)
 	set(warnings
 		-Wall
 		-Wextra
-		-Werror
+		#		-Werror
 
 		-Warray-bounds
 		-Wdisabled-optimization
 		-Wdouble-promotion
-		-Wfatal-errors
+		#		-Wfatal-errors
 		-Wfloat-equal
 		-Wformat-security
 		-Winit-self
