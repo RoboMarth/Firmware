@@ -512,12 +512,13 @@ SF0X::collect()
 //	if (!valid) {
 //		return -EAGAIN;
 //	}
-	int readbuf[2];
+	uint8_t readbuf[2];
 	::read(_fd, &readbuf[0], 2);
+	::tcflush(_fd, TCIFLUSH);
 
 	bool valid = true;
 
-	float distance_m = readbuf[0];
+	float distance_m = readbuf[1] + readbuf[0] / 256.0f;
 
 	PX4_DEBUG("val (float): %8.4f, raw: %s, valid: %s", (double)distance_m, _linebuf, ((valid) ? "OK" : "NO"));
 
