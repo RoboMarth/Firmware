@@ -221,7 +221,7 @@ SF0X::init()
 
 	_min_distance = 0.01f;
 	_max_distance = 100.0f;
-	_conversion_interval = 25588;
+	_conversion_interval = 25587;
 
 //	switch (hw_model) {
 //
@@ -550,10 +550,14 @@ SF0X::collect()
 //
 //	if (!valid) {
 //		return -EAGAIN;
-//	}
+//	
+
+	int bytes_read = 0;
 	uint8_t readbuf[2];
-	::read(_fd, &readbuf[0], 2);
-	::tcflush(_fd, TCIFLUSH);
+	while (bytes_read < 2) {
+		bytes_read += ::read(_fd, &readbuf[bytes_read], 1);
+	}
+	//::tcflush(_fd, TCIFLUSH);
 
 	bool valid = true;
 
