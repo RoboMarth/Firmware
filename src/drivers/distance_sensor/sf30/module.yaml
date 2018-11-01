@@ -1,0 +1,7 @@
+module_name: Lightware Laser Rangefinder SF30
+serial_config:
+    - command: sf30 start -d ${SERIAL_DEV}
+      port_config_param:
+        name: SENS_SF30_CFG
+        group: Sensors
+
