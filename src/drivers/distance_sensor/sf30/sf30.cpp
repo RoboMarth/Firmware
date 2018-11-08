@@ -35,8 +35,9 @@
  * @file sf30.cpp
  * @author Lorenz Meier <lm@inf.ethz.ch>
  * @author Greg Hulands
+ * @author Michael Zhan
  *
- * Driver for the Lightware SF0x laser rangefinder series
+ * Driver for the Lightware SF30/x laser rangefinder series
  */
 
 #include <px4_config.h>
@@ -105,7 +106,6 @@ private:
 	work_s				_work{};
 	ringbuffer::RingBuffer		*_reports;
 	int				_measure_ticks;
-	bool				_collect_phase;
 	int				_fd;
 	char				_linebuf[10];
 	unsigned			_linebuf_index;
@@ -150,7 +150,6 @@ private:
 	* and start a new one.
 	*/
 	void				cycle();
-	int				measure();
 	int				collect();
 	/**
 	* Static trampoline from the workq context; because we don't have a
@@ -176,7 +175,6 @@ SF30::SF30(const char *port, uint8_t rotation) :
 	_conversion_interval(83334),
 	_reports(nullptr),
 	_measure_ticks(0),
-	_collect_phase(false),
 	_fd(-1),
 	_linebuf_index(0),
 	_parse_state(SF30_PARSE_STATE0_UNSYNC),
@@ -433,74 +431,21 @@ SF30::read(device::file_t *filp, char *buffer, size_t buflen)
 		return -ENOSPC;
 	}
 
-	/* if automatic measurement is enabled */
-	if (_measure_ticks > 0) {
 
-		/*
-		 * While there is space in the caller's buffer, and reports, copy them.
-		 * Note that we may be pre-empted by the workq thread while we are doing this;
-		 * we are careful to avoid racing with them.
-		 */
-		while (count--) {
-			if (_reports->get(rbuf)) {
-				ret += sizeof(*rbuf);
-				rbuf++;
-			}
+	/*
+	 * While there is space in the caller's buffer, and reports, copy them.
+	 * Note that we may be pre-empted by the workq thread while we are doing this;
+	 * we are careful to avoid racing with them.
+	 */
+	while (count--) {
+		if (_reports->get(rbuf)) {
+			ret += sizeof(*rbuf);
+			rbuf++;
 		}
-
-		/* if there was no data, warn the caller */
-		return ret ? ret : -EAGAIN;
 	}
 
-	/* manual measurement - run one conversion */
-	do {
-		_reports->flush();
-
-		/* trigger a measurement */
-		if (OK != measure()) {
-			ret = -EIO;
-			break;
-		}
-
-		/* wait for it to complete */
-		usleep(_conversion_interval);
-
-		/* run the collection phase */
-		if (OK != collect()) {
-			ret = -EIO;
-			break;
-		}
-
-		/* state machine will have generated a report, copy it out */
-		if (_reports->get(rbuf)) {
-			ret = sizeof(*rbuf);
-		}
-
-	} while (0);
-
-	return ret;
-}
-
-int
-SF30::measure()
-{
-	int ret;
-
-//	/*
-//	 * Send the command to begin a measurement.
-//	 */
-//	char cmd = SF30_TAKE_RANGE_REG;
-//	ret = ::write(_fd, &cmd, 1);
-//
-//	if (ret != sizeof(cmd)) {
-//		perf_count(_comms_errors);
-//		PX4_DEBUG("write fail %d", ret);
-//		return ret;
-//	}
-
-	ret = OK;
-
-	return ret;
+	/* if there was no data, warn the caller */
+	return ret ? ret : -EAGAIN;
 }
 
 int
@@ -593,8 +538,7 @@ SF30::collect()
 void
 SF30::start()
 {
-	/* reset the report ring and state machine */
-	_collect_phase = false;
+	/* reset the state machine */
 	_reports->flush();
 
 	/* schedule a cycle to start things */
@@ -658,66 +602,36 @@ SF30::cycle()
 		}
 	}
 
-	/* collection phase? */
-	if (_collect_phase) {
+	/* perform collection */
+	int collect_ret = collect();
 
-		/* perform collection */
-		int collect_ret = collect();
-
-		if (collect_ret == -EAGAIN) {
-			/* reschedule to grab the missing bits, time to transmit 8 bytes @ 9600 bps */
-			work_queue(HPWORK,
-				   &_work,
-				   (worker_t)&SF30::cycle_trampoline,
-				   this,
-				   USEC2TICK(1042 * 8));
-			return;
-		}
-
-		if (OK != collect_ret) {
-
-			/* we know the sensor needs about four seconds to initialize */
-			if (hrt_absolute_time() > 5 * 1000 * 1000LL && _consecutive_fail_count < 5) {
-				PX4_ERR("collection error #%u", _consecutive_fail_count);
-			}
-
-			_consecutive_fail_count++;
-
-			/* restart the measurement state machine */
-			start();
-			return;
-
-		} else {
-			/* apparently success */
-			_consecutive_fail_count = 0;
-		}
-
-		/* next phase is measurement */
-		_collect_phase = false;
-
-		/*
-		 * Is there a collect->measure gap?
-		 */
-		if (_measure_ticks > USEC2TICK(_conversion_interval)) {
-
-			/* schedule a fresh cycle call when we are ready to measure again */
-			work_queue(HPWORK,
-				   &_work,
-				   (worker_t)&SF30::cycle_trampoline,
-				   this,
-				   _measure_ticks - USEC2TICK(_conversion_interval));
-
-			return;
-		}
+	if (collect_ret == -EAGAIN) {
+		/* reschedule to grab the missing bits, time to transmit 8 bytes @ 9600 bps */
+		work_queue(HPWORK,
+			   &_work,
+			   (worker_t)&SF30::cycle_trampoline,
+			   this,
+			   USEC2TICK(1042 * 8));
+		return;
 	}
 
-	/* measurement phase */
-	if (OK != measure()) {
-		PX4_DEBUG("measure error");
-	}
+	if (OK != collect_ret) {
 
-	/* next phase is collection */
-	_collect_phase = true;
+		/* we know the sensor needs about four seconds to initialize */
+		if (hrt_absolute_time() > 5 * 1000 * 1000LL && _consecutive_fail_count < 5) {
+			PX4_ERR("collection error #%u", _consecutive_fail_count);
+		}
+
+		_consecutive_fail_count++;
+
+		/* restart the measurement state machine */
+		start();
+		return;
+
+	} else {
+		/* apparently success */
+		_consecutive_fail_count = 0;
+	}
 
 	/* schedule a fresh cycle call when the measurement is done */
 	work_queue(HPWORK,
