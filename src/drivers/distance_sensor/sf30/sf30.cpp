@@ -504,7 +504,7 @@ SF30::collect()
 
 	bool valid = true;
 
-	float distance_m = readbuf[1] + readbuf[0] / 256.0f;
+	float distance_m = (readbuf[0] - 128.0f + readbuf[1] / 100.0f);
 
 	PX4_DEBUG("val (float): %8.4f, raw: %s, valid: %s", (double)distance_m, _linebuf, ((valid) ? "OK" : "NO"));
 
@@ -586,7 +586,7 @@ SF30::cycle()
 		/* no parity, one stop bit */
 		uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-		unsigned speed = B9600;
+		unsigned speed = B230400;
 
 		/* set baud rate */
 		if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -600,6 +600,7 @@ SF30::cycle()
 		if ((termios_state = tcsetattr(_fd, TCSANOW, &uart_config)) < 0) {
 			PX4_ERR("baud %d ATTR", termios_state);
 		}
+		
 	}
 
 	/* perform collection */
