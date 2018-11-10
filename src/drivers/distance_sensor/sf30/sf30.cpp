@@ -586,7 +586,7 @@ SF30::cycle()
 		/* no parity, one stop bit */
 		uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-		unsigned speed = B230400;
+		unsigned speed = B921600;
 
 		/* set baud rate */
 		if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
