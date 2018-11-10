@@ -497,14 +497,23 @@ SF30::collect()
 //		return -EAGAIN;
 //	
 
-	int bytes_read = 0;
 	uint8_t readbuf[2];
-	bytes_read += ::read(_fd, &readbuf[bytes_read], 2);
+	ret = ::read(_fd, &readbuf[0], 2);
 	::tcflush(_fd, TCIFLUSH);
+
+	if (ret <= 1) {		
+		PX4_ERR("read err: %d", ret);
+		return ret;
+	}
 
 	bool valid = true;
 
 	float distance_m = (readbuf[0] - 128.0f + readbuf[1] / 100.0f);
+
+	if (distance_m <= 0) {
+		PX4_ERR("read error, possible byte misalignment");
+		return ret;
+	}
 
 	PX4_DEBUG("val (float): %8.4f, raw: %s, valid: %s", (double)distance_m, _linebuf, ((valid) ? "OK" : "NO"));
 
@@ -606,15 +615,15 @@ SF30::cycle()
 	/* perform collection */
 	int collect_ret = collect();
 
-	if (collect_ret == -EAGAIN) {
-		/* reschedule to grab the missing bits, time to transmit 8 bytes @ 9600 bps */
-		work_queue(HPWORK,
-			   &_work,
-			   (worker_t)&SF30::cycle_trampoline,
-			   this,
-			   USEC2TICK(1042 * 8));
-		return;
-	}
+//	if (collect_ret == -EAGAIN) {
+//		/* reschedule to grab the missing bits, time to transmit 8 bytes @ 9600 bps */
+//		work_queue(HPWORK,
+//			   &_work,
+//			   (worker_t)&SF30::cycle_trampoline,
+//			   this,
+//			   USEC2TICK(1042 * 8));
+//		return;
+//	}
 
 	if (OK != collect_ret) {
 
