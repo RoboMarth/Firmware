@@ -219,47 +219,43 @@ SF0X::init()
 	int hw_model;
 	param_get(param_find("SENS_EN_SF0X"), &hw_model);
 
-	_min_distance = 0.01f;
-	_max_distance = 100.0f;
-	_conversion_interval = 25587;
+	switch (hw_model) {
 
-//	switch (hw_model) {
-//
-//	case 1: /* SF02 (40m, 12 Hz)*/
-//		_min_distance = 0.3f;
-//		_max_distance = 40.0f;
-//		_conversion_interval =	83334;
-//		break;
-//
-//	case 2:  /* SF10/a (25m 32Hz) */
-//		_min_distance = 0.01f;
-//		_max_distance = 25.0f;
-//		_conversion_interval = 31250;
-//		break;
-//
-//	case 3:  /* SF10/b (50m 32Hz) */
-//		_min_distance = 0.01f;
-//		_max_distance = 50.0f;
-//		_conversion_interval = 31250;
-//		break;
-//
-//	case 4:  /* SF10/c (100m 16Hz) */
-//		_min_distance = 0.01f;
-//		_max_distance = 100.0f;
-//		_conversion_interval = 62500;
-//		break;
-//
-//	case 5:
-//		/* SF11/c (120m 20Hz) */
-//		_min_distance = 0.01f;
-//		_max_distance = 120.0f;
-//		_conversion_interval = 50000;
-//		break;
-//
-//	default:
-//		PX4_ERR("invalid HW model %d.", hw_model);
-//		return -1;
-//	}
+	case 1: /* SF02 (40m, 12 Hz)*/
+		_min_distance = 0.3f;
+		_max_distance = 40.0f;
+		_conversion_interval =	83334;
+		break;
+
+	case 2:  /* SF10/a (25m 32Hz) */
+		_min_distance = 0.01f;
+		_max_distance = 25.0f;
+		_conversion_interval = 31250;
+		break;
+
+	case 3:  /* SF10/b (50m 32Hz) */
+		_min_distance = 0.01f;
+		_max_distance = 50.0f;
+		_conversion_interval = 31250;
+		break;
+
+	case 4:  /* SF10/c (100m 16Hz) */
+		_min_distance = 0.01f;
+		_max_distance = 100.0f;
+		_conversion_interval = 62500;
+		break;
+
+	case 5:
+		/* SF11/c (120m 20Hz) */
+		_min_distance = 0.01f;
+		_max_distance = 120.0f;
+		_conversion_interval = 50000;
+		break;
+
+	default:
+		PX4_ERR("invalid HW model %d.", hw_model);
+		return -1;
+	}
 
 	/* status */
 	int ret = 0;
@@ -471,58 +467,47 @@ SF0X::collect()
 
 	perf_begin(_sample_perf);
 
-//	/* clear buffer if last read was too long ago */
-//	int64_t read_elapsed = hrt_elapsed_time(&_last_read);
-//
-//	/* the buffer for read chars is buflen minus null termination */
-//	char readbuf[sizeof(_linebuf)];
-//	unsigned readlen = sizeof(readbuf) - 1;
-//
-//	/* read from the sensor (uart buffer) */
-//	ret = ::read(_fd, &readbuf[0], readlen);
-//
-//	if (ret < 0) {
-//		PX4_DEBUG("read err: %d", ret);
-//		perf_count(_comms_errors);
-//		perf_end(_sample_perf);
-//
-//		/* only throw an error if we time out */
-//		if (read_elapsed > (_conversion_interval * 2)) {
-//			return ret;
-//
-//		} else {
-//			return -EAGAIN;
-//		}
-//
-//	} else if (ret == 0) {
-//		return -EAGAIN;
-//	}
-//
-//	_last_read = hrt_absolute_time();
-//
-//	float distance_m = -1.0f;
-//	bool valid = false;
-//
-//	for (int i = 0; i < ret; i++) {
-//		if (OK == sf0x_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &distance_m)) {
-//			valid = true;
-//		}
-//	}
-//
-//	if (!valid) {
-//		return -EAGAIN;
-//	
+	/* clear buffer if last read was too long ago */
+	int64_t read_elapsed = hrt_elapsed_time(&_last_read);
 
-	int bytes_read = 0;
-	uint8_t readbuf[2];
-	while (bytes_read < 2) {
-		bytes_read += ::read(_fd, &readbuf[bytes_read], 1);
+	/* the buffer for read chars is buflen minus null termination */
+	char readbuf[sizeof(_linebuf)];
+	unsigned readlen = sizeof(readbuf) - 1;
+
+	/* read from the sensor (uart buffer) */
+	ret = ::read(_fd, &readbuf[0], readlen);
+
+	if (ret < 0) {
+		PX4_DEBUG("read err: %d", ret);
+		perf_count(_comms_errors);
+		perf_end(_sample_perf);
+
+		/* only throw an error if we time out */
+		if (read_elapsed > (_conversion_interval * 2)) {
+			return ret;
+
+		} else {
+			return -EAGAIN;
+		}
+
+	} else if (ret == 0) {
+		return -EAGAIN;
 	}
-	//::tcflush(_fd, TCIFLUSH);
 
-	bool valid = true;
+	_last_read = hrt_absolute_time();
 
-	float distance_m = readbuf[1] + readbuf[0] / 256.0f;
+	float distance_m = -1.0f;
+	bool valid = false;
+
+	for (int i = 0; i < ret; i++) {
+		if (OK == sf0x_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &distance_m)) {
+			valid = true;
+		}
+	}
+
+	if (!valid) {
+		return -EAGAIN;
+	}
 
 	PX4_DEBUG("val (float): %8.4f, raw: %s, valid: %s", (double)distance_m, _linebuf, ((valid) ? "OK" : "NO"));
 
