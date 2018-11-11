@@ -68,8 +68,6 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/distance_sensor.h>
 
-#include "sf30_parser.h"
-
 /* Configuration Constants */
 
 #ifndef CONFIG_SCHED_WORKQUEUE
@@ -109,7 +107,6 @@ private:
 	int				_fd;
 	char				_linebuf[10];
 	unsigned			_linebuf_index;
-	enum SF30_PARSE_STATE		_parse_state;
 	hrt_abstime			_last_read;
 
 	int				_class_instance;
@@ -177,7 +174,6 @@ SF30::SF30(const char *port, uint8_t rotation) :
 	_measure_ticks(0),
 	_fd(-1),
 	_linebuf_index(0),
-	_parse_state(SF30_PARSE_STATE0_UNSYNC),
 	_last_read(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
