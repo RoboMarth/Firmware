@@ -68,6 +68,7 @@ px4_add_romfs_files(
 	4070_aerofc
 	4080_zmr250
 	4090_nanomind
+	4110_gimp
 	4900_crazyflie
 	5001_quad_+
 	6001_hexa_x

@@ -370,8 +370,8 @@ fi
 #                           Begin Optional drivers                            #
 ###############################################################################
 
-if [ ${VEHICLE_TYPE} = fw -o ${VEHICLE_TYPE} = vtol ]
-then
+#if [ ${VEHICLE_TYPE} = fw -o ${VEHICLE_TYPE} = vtol ]
+#then
 	if param compare CBRK_AIRSPD_CHK 0
 	then
 		sdp3x_airspeed start -a
@@ -392,7 +392,7 @@ then
 		ets_airspeed start -a
 
 	fi
-fi
+#fi
 
 # Sensors on the PWM interface bank
 if param compare SENS_EN_LL40LS 1
