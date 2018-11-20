@@ -372,7 +372,7 @@ function(px4_add_common_flags)
 	set(warnings
 		-Wall
 		-Wextra
-		-Werror
+		#		-Werror
 
 		-Warray-bounds
 		-Wdisabled-optimization
