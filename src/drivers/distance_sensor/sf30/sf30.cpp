@@ -102,18 +102,23 @@ int SF30::read_most_recent_bytes()
 	uint8_t temp_buffer[2];
 	int ret2 = ::read(_fd, temp_buffer, sizeof(temp_buffer));
 
+
+	PX4_ERR("high byte: %d, low byte: %d", bytes_buffer[0], bytes_buffer[1]);
+	PX4_ERR("ret: %d, ret2: %d", ret, ret2);
+
 	// if the bytes read are the last two bytes available
-	if (ret == 2 && ret2 == 0) { 
+	if (ret == 2 && ret2 == -1) { 
 		
 		// sanity check: if the bytes are correctly formatted
 		if (is_high_byte(bytes_buffer[0]) && !is_high_byte(bytes_buffer[1])) {
-
+			PX4_ERR("sanity pass");
 			_high_byte = bytes_buffer[0];
 			_low_byte = bytes_buffer[1];
 			return PX4_OK;
 
 		} else {
 
+			PX4_ERR("sanity fail");
 			return PX4_ERROR;
 		}
 		
@@ -126,6 +131,8 @@ int SF30::read_most_recent_bytes()
 			PX4_ERR("read err3: %d", ret);
 			return PX4_ERROR;
 		}
+
+		PX4_ERR("something's wrong");
 	}
 
 	return PX4_OK;
@@ -133,8 +140,8 @@ int SF30::read_most_recent_bytes()
 
 bool SF30::is_high_byte(uint8_t byte)
 {
-	return (0b01111111 & byte) ==
-	        0b11111111;
+	return (0b10000000 & byte) ==
+	        0b10000000;
 }
 
 int SF30::open_serial()
