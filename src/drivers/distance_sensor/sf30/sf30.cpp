@@ -75,7 +75,6 @@ void SF30::run()
 			report.current_distance = distance;
 			report.min_distance = 0.2f;
 			report.max_distance = 100.0f;
-			report.signal_quality = -1;
 
 			orb_publish(ORB_ID(distance_sensor), _distance_sensor_topic, &report);
 		}
