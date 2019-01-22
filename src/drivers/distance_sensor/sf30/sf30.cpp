@@ -95,7 +95,7 @@ int SF30::read_most_recent_bytes()
 
 	uint8_t temp_buffer[2];
 	int ret2 = ::read(_fd, temp_buffer, sizeof(temp_buffer));
-	int err2 = errno;
+	// int err2 = errno;
 
 	// if the bytes read are the last two bytes available
 	if (ret == 2 && ret2 == -1) { 
@@ -120,10 +120,11 @@ int SF30::read_most_recent_bytes()
 			tcflush(_fd, TCIFLUSH);
 			PX4_ERR("read err3: %d, errno: %d, buffer reset", ret, err);
 
-		} else if (ret >= 0) {
-			tcflush(_fd, TCIFLUSH);
-			PX4_ERR("falling behind, buffer reset");
-		}
+		} //else if (ret >= 0) {
+			// don't do anything here, otherwise won't ever catch up
+			// tcflush(_fd, TCIFLUSH);
+			// PX4_ERR("falling behind, buffer reset");
+		//}
 
 		// otherwise just no data (ret == -1 && err == 11), so don't publish
 		return PX4_ERROR;
