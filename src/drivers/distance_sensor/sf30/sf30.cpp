@@ -62,7 +62,7 @@ void SF30::run()
         }
 
 	tcflush(_fd, TCIFLUSH);
-	uint64_t start_time = hrt_absolute_time();	
+//	uint64_t start_time = hrt_absolute_time();	
 
 	while (!should_exit()) {
 		
@@ -81,11 +81,17 @@ void SF30::run()
 			orb_publish(ORB_ID(distance_sensor), _distance_sensor_topic, &report);
 		}
 
-		uint64_t loop_time = hrt_absolute_time() - start_time;
-		uint32_t sleep_time = (loop_time > OUTPUT_INTERVAL_US) ? 0 : OUTPUT_INTERVAL_US - loop_time;
-		px4_usleep(sleep_time);
+//		uint64_t loop_time = hrt_absolute_time() - start_time;
+//		uint32_t sleep_time = 0;
+//		if (loop_time > OUTPUT_INTERVAL_US) {
+//			PX4_ERR("Falling behind");
+//		} else {
+//			sleep_time = OUTPUT_INTERVAL_US - loop_time;
+//			PX4_ERR("sleep time: %d", sleep_time);
+//		}
+//		px4_usleep(sleep_time);
 				
-		start_time = hrt_absolute_time();	
+//		start_time = hrt_absolute_time();	
 	}
 
 	PX4_INFO("Exiting.");
@@ -96,28 +102,30 @@ int SF30::read_most_recent_bytes()
 {
 	uint8_t bytes_buffer[2];
 	int ret = ::read(_fd, bytes_buffer, sizeof(bytes_buffer));
+	int err = errno;
 
 	_report_timestamp = hrt_absolute_time(); // most accurate place to get timestamp?
 
 	uint8_t temp_buffer[2];
 	int ret2 = ::read(_fd, temp_buffer, sizeof(temp_buffer));
+	int err2 = errno;
 
 
-	PX4_ERR("high byte: %d, low byte: %d", bytes_buffer[0], bytes_buffer[1]);
-	PX4_ERR("ret: %d, ret2: %d", ret, ret2);
+	// PX4_ERR("high byte: %d, low byte: %d", bytes_buffer[0], bytes_buffer[1]);
+	
+//	PX4_ERR("ret: %d, ret2: %d", ret, ret2);
 
 	// if the bytes read are the last two bytes available
 	if (ret == 2 && ret2 == -1) { 
 		
 		// sanity check: if the bytes are correctly formatted
 		if (is_high_byte(bytes_buffer[0]) && !is_high_byte(bytes_buffer[1])) {
-			PX4_ERR("sanity pass");
 			_high_byte = bytes_buffer[0];
 			_low_byte = bytes_buffer[1];
 			return PX4_OK;
 
 		} else {
-
+			PX4_ERR("ret: %d, ret2: %d", ret, ret2);
 			PX4_ERR("sanity fail");
 			return PX4_ERROR;
 		}
@@ -128,11 +136,13 @@ int SF30::read_most_recent_bytes()
 		if (ret < 0) {
 
 			tcflush(_fd, TCIFLUSH);
-			PX4_ERR("read err3: %d", ret);
+			PX4_ERR("read err3: %d, errno: %d", ret, err);
 			return PX4_ERROR;
 		}
 
-		PX4_ERR("something's wrong");
+//		PX4_ERR("ret: %d, ret2: %d", ret, ret2);
+//		PX4_ERR("something's wrong");
+		return PX4_ERROR;
 	}
 
 	return PX4_OK;

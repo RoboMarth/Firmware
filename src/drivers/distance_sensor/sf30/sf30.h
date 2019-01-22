@@ -12,7 +12,7 @@
 
 #define SF30_DEFAULT_PORT 	"/dev/ttyS2"
 #define BAUD_RATE 		B921600
-#define OUTPUT_INTERVAL_US 	25588
+#define OUTPUT_INTERVAL_US 	42
 
 class SF30 : public ModuleBase<SF30>
 {
