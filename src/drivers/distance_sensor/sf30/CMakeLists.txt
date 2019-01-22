@@ -36,8 +36,6 @@ px4_add_module(
 	COMPILE_FLAGS
 	SRCS
 		sf30.cpp
-	MODULE_CONFIG
-		module.yaml
 	DEPENDS
 	)
 
