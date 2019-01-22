@@ -62,7 +62,6 @@ void SF30::run()
         }
 
 	tcflush(_fd, TCIFLUSH);
-//	uint64_t start_time = hrt_absolute_time();	
 
 	while (!should_exit()) {
 		
@@ -80,18 +79,6 @@ void SF30::run()
 
 			orb_publish(ORB_ID(distance_sensor), _distance_sensor_topic, &report);
 		}
-
-//		uint64_t loop_time = hrt_absolute_time() - start_time;
-//		uint32_t sleep_time = 0;
-//		if (loop_time > OUTPUT_INTERVAL_US) {
-//			PX4_ERR("Falling behind");
-//		} else {
-//			sleep_time = OUTPUT_INTERVAL_US - loop_time;
-//			PX4_ERR("sleep time: %d", sleep_time);
-//		}
-//		px4_usleep(sleep_time);
-				
-//		start_time = hrt_absolute_time();	
 	}
 
 	PX4_INFO("Exiting.");
@@ -110,11 +97,6 @@ int SF30::read_most_recent_bytes()
 	int ret2 = ::read(_fd, temp_buffer, sizeof(temp_buffer));
 	int err2 = errno;
 
-
-	// PX4_ERR("high byte: %d, low byte: %d", bytes_buffer[0], bytes_buffer[1]);
-	
-//	PX4_ERR("ret: %d, ret2: %d", ret, ret2);
-
 	// if the bytes read are the last two bytes available
 	if (ret == 2 && ret2 == -1) { 
 		
@@ -125,27 +107,27 @@ int SF30::read_most_recent_bytes()
 			return PX4_OK;
 
 		} else {
+			tcflush(_fd, TCIFLUSH);
 			PX4_ERR("ret: %d, ret2: %d", ret, ret2);
-			PX4_ERR("sanity fail");
+			PX4_ERR("sanity fail, buffer reset");
 			return PX4_ERROR;
 		}
 		
 	} else { // something's wrong
 
 		// error in ::read system call
-		if (ret < 0) {
-
+		if (ret < 0 && err != 11) {
 			tcflush(_fd, TCIFLUSH);
-			PX4_ERR("read err3: %d, errno: %d", ret, err);
-			return PX4_ERROR;
+			PX4_ERR("read err3: %d, errno: %d, buffer reset", ret, err);
+
+		} else if (ret >= 0) {
+			tcflush(_fd, TCIFLUSH);
+			PX4_ERR("falling behind, buffer reset");
 		}
 
-//		PX4_ERR("ret: %d, ret2: %d", ret, ret2);
-//		PX4_ERR("something's wrong");
+		// otherwise just no data (ret == -1 && err == 11), so don't publish
 		return PX4_ERROR;
 	}
-
-	return PX4_OK;
 }
 
 bool SF30::is_high_byte(uint8_t byte)
