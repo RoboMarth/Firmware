@@ -52,5 +52,4 @@ private:
 	uint8_t _low_byte = 0;
 
 	uint64_t _report_timestamp = 0;
-
 };

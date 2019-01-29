@@ -82,7 +82,8 @@ void SF30::run()
 
 		uint64_t loop_time = hrt_absolute_time() - start_time;
 		uint32_t sleep_time = (loop_time > OUTPUT_INTERVAL_US) ? 0 : OUTPUT_INTERVAL_US - loop_time;
-		px4_usleep(sleep_time);
+		PX4_ERR("%d", sleep_time);
+		usleep(sleep_time);
 				
 		start_time = hrt_absolute_time();	
 	}
@@ -95,46 +96,53 @@ int SF30::read_most_recent_bytes()
 {
 	uint8_t bytes_buffer[2];
 	int ret = ::read(_fd, bytes_buffer, sizeof(bytes_buffer));
+	int err = errno;
 
 	_report_timestamp = hrt_absolute_time(); // most accurate place to get timestamp?
 
 	uint8_t temp_buffer[2];
 	int ret2 = ::read(_fd, temp_buffer, sizeof(temp_buffer));
-
-
-	PX4_ERR("high byte: %d, low byte: %d", bytes_buffer[0], bytes_buffer[1]);
-	PX4_ERR("ret: %d, ret2: %d", ret, ret2);
+	int err2 = errno;
 
 	// if the bytes read are the last two bytes available
-	if (ret == 2 && ret2 == -1) { 
+	if (ret == 2 && ret2 == -1 && err2 == 11) { 
 		
 		// sanity check: if the bytes are correctly formatted
 		if (is_high_byte(bytes_buffer[0]) && !is_high_byte(bytes_buffer[1])) {
-			PX4_ERR("sanity pass");
 			_high_byte = bytes_buffer[0];
 			_low_byte = bytes_buffer[1];
 			return PX4_OK;
 
 		} else {
 
-			PX4_ERR("sanity fail");
+			PX4_ERR("sanity fail, not publishing");
 			return PX4_ERROR;
 		}
 		
-	} else { // something's wrong
+	// something's wrong
+	} else { 
+		// tried to read too early
+		if (ret == 1 || ret == 0 || (ret == -1 && err == 11)) { 
 
-		// error in ::read system call
-		if (ret < 0) {
+			PX4_ERR("too early, ret: %d, ret2: %d", ret, ret2);
+
+		// tried to read too late
+		} else if (ret == 2 && ret2 >= 0) {
+
+			PX4_ERR("too late, ret2: %d", ret2);
+
+		// unexpected error in ::read system call
+		} else if (ret == -1 && err != 11) { 
 
 			tcflush(_fd, TCIFLUSH);
-			PX4_ERR("read err3: %d", ret);
-			return PX4_ERROR;
+			PX4_ERR("read error: %d, errno: %d, buffer flushed", ret, err);
+
+		// uncaught result
+		} else {
+			PX4_ERR("unexpected result");
 		}
-
-		PX4_ERR("something's wrong");
+		return PX4_ERROR;
 	}
-
-	return PX4_OK;
 }
 
 bool SF30::is_high_byte(uint8_t byte)
