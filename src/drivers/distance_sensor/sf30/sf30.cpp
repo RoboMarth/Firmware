@@ -82,7 +82,7 @@ void SF30::run()
 
 		uint64_t loop_time = hrt_absolute_time() - start_time;
 		uint32_t sleep_time = (loop_time > OUTPUT_INTERVAL_US) ? 0 : OUTPUT_INTERVAL_US - loop_time;
-		PX4_ERR("%d", sleep_time);
+        // PX4_ERR("%d", sleep_time);
 		usleep(sleep_time);
 				
 		start_time = hrt_absolute_time();	
@@ -129,7 +129,7 @@ int SF30::read_most_recent_bytes()
 		// tried to read too late
 		} else if (ret == 2 && ret2 >= 0) {
 
-			PX4_ERR("too late, ret2: %d", ret2);
+			// PX4_ERR("too late, ret2: %d", ret2);
 
 		// unexpected error in ::read system call
 		} else if (ret == -1 && err != 11) { 
